@@ -1,109 +1,163 @@
 import streamlit as st
 from auth.session_manager import SessionManager
-from config.app_config import APP_ICON, APP_NAME, APP_TAGLINE, APP_DESCRIPTION
+from config.app_config import APP_ICON, APP_NAME, APP_TAGLINE
 from utils.validators import validate_signup_fields
 import time
-import re
+
 
 def show_login_page():
-    # IMPORTANT: Initialize form_type immediately, no code before this!
-    if 'form_type' not in st.session_state:
-        st.session_state['form_type'] = 'login'  # Use dict-style access to be safer
-    
-    # From now on, form_type is guaranteed to exist
-    current_form = st.session_state['form_type']  # Use dict-style access for consistency
+    if "form_type" not in st.session_state:
+        st.session_state["form_type"] = "login"
 
-    # Hide form submission helper text
-    st.markdown("""
+    current_form = st.session_state["form_type"]
+
+    # Subtle clinical ambient glow & micro-grid background styling
+    st.html(
+        """
         <style>
-            /* Hide form submission helper text */
-            div[data-testid="InputInstructions"] > span:nth-child(1) {
-                visibility: hidden;
+            .stApp {
+                background-color: #0B0F19 !important;
+                background-image: 
+                    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.09) 0%, transparent 65%),
+                    radial-gradient(circle at 85% 90%, rgba(45, 212, 191, 0.04) 0%, transparent 50%),
+                    radial-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px) !important;
+                background-size: 100% 100%, 100% 100%, 28px 28px !important;
+                background-attachment: fixed !important;
+            }
+
+            /* Frosted glass authentication card */
+            div[data-testid="stForm"] {
+                background: rgba(30, 41, 59, 0.7) !important;
+                backdrop-filter: blur(14px) !important;
+                -webkit-backdrop-filter: blur(14px) !important;
+                border: 1px solid rgba(51, 65, 85, 0.9) !important;
+                border-radius: 14px !important;
+                padding: 1.75rem 1.5rem !important;
+                box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.06) !important;
             }
         </style>
-    """, unsafe_allow_html=True)
+        """
+    )
 
-    st.markdown(f"""
-        <div style='text-align: center; padding: 2rem;'>
-            <h1>{APP_ICON} {APP_NAME}</h1>
-            <h3>{APP_DESCRIPTION}</h3>
-            <p style='font-size: 1.2em; color: #666; margin-bottom: 1em;'>{APP_TAGLINE}</p>
-            <h3>{("Welcome Back!" if current_form == 'login' else "Welcome!")}</h3>
+    # Check if localStorage has persisted session token and URL lacks ?auth=
+    st.html("""
+    <script>
+        try {
+            const token = localStorage.getItem('mediflow_auth_token');
+            if (token && !window.location.search.includes('auth=')) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('auth', token);
+                window.location.replace(url.toString());
+            }
+        } catch(e) {}
+    </script>
+    """)
+
+    st.html(
+        f"""
+        <div style="text-align: center; padding: 2.25rem 1rem 1.25rem 1rem; max-width: 480px; margin: 0 auto;">
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background: rgba(56, 189, 248, 0.1);
+                border: 1px solid rgba(56, 189, 248, 0.25);
+                font-size: 22px;
+                margin-bottom: 0.75rem;
+                box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+            ">
+                {APP_ICON}
+            </div>
+            <h1 style="font-weight: 800; color: #F8FAFC; font-size: 1.85rem; letter-spacing: -0.02em; margin: 0 0 0.25rem 0;">
+                {APP_NAME}
+            </h1>
+            <p style="color: #38BDF8; font-size: 0.92rem; font-weight: 600; margin: 0 0 0.5rem 0;">
+                {APP_TAGLINE}
+            </p>
+            <p style="color: #94A3B8; font-size: 0.88rem; margin: 0;">
+                {"Welcome back — please enter your credentials to continue." if current_form == 'login' else "Register to start analyzing laboratory panels."}
+            </p>
         </div>
-    """, unsafe_allow_html=True)
+        """
+    )
 
-    # Center the form
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Use the stored current_form value
-        if current_form == 'login':
+        if current_form == "login":
             show_login_form()
         else:
             show_signup_form()
-        
-        # Toggle button at bottom
-        st.markdown("---")
-        toggle_text = "Don't have an account? Sign up" if current_form == 'login' else "Already have an account? Login"
+
+        st.html("<div style='height: 12px;'></div>")
+        toggle_text = (
+            "Don't have an account? Sign up"
+            if current_form == "login"
+            else "Already have an account? Log in"
+        )
         if st.button(toggle_text, use_container_width=True, type="secondary"):
-            # Toggle form type (use dict access for safety)
-            st.session_state['form_type'] = 'signup' if current_form == 'login' else 'login'
+            st.session_state["form_type"] = "signup" if current_form == "login" else "login"
             st.rerun()
+
 
 def show_login_form():
     with st.form("login_form"):
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
-        
-        if st.form_submit_button("Login", use_container_width=True, type="primary"):
+        email = st.text_input("Email Address", placeholder="doctor@hospital.org", key="login_email")
+        password = st.text_input("Password", type="password", placeholder="••••••••", key="login_password")
+
+        submitted = st.form_submit_button("Sign In to MediFlow", use_container_width=True, type="primary")
+        if submitted:
             if email and password:
-                success, result = SessionManager.login(email, password)
-                if success:
-                    # Show success message with spinner
-                    with st.spinner("Logging in..."):
-                        success_placeholder = st.empty()
-                        success_placeholder.success("Login successful! Redirecting...")
-                        time.sleep(1)  # Brief pause to show message
+                with st.spinner("Authenticating..."):
+                    success, result = SessionManager.login(email.strip(), password)
+                    if success:
+                        st.success("Authentication successful! Loading workspace...")
+                        time.sleep(0.5)
                         st.rerun()
-                else:
-                    st.error(f"Login failed: {result}")
+                    else:
+                        st.error(f"Sign in failed: {result}")
             else:
-                st.error("Please enter both email and password")
+                st.error("Please enter both email address and password.")
+
 
 def show_signup_form():
     with st.form("signup_form"):
-        new_name = st.text_input("Full Name", key="signup_name")
-        new_email = st.text_input("Email", key="signup_email")
-        new_password = st.text_input("Password", type="password", key="signup_password")
-        confirm_password = st.text_input("Confirm Password", type="password", key="signup_password2")
-        
-        st.markdown("""
-            Password requirements:
-            - At least 8 characters
-            - One uppercase letter
-            - One lowercase letter
-            - One number
-        """)
-        
-        if st.form_submit_button("Sign Up", use_container_width=True, type="primary"):
-            validation_result = validate_signup_fields(
-                new_name, new_email, new_password, confirm_password
-            )
-            
+        new_name = st.text_input("Full Name", placeholder="Dr. Alex Rivera", key="signup_name")
+        new_email = st.text_input("Email Address", placeholder="alex@clinic.org", key="signup_email")
+        new_password = st.text_input("Password", type="password", placeholder="At least 8 characters", key="signup_password")
+        confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm password", key="signup_password2")
+
+        st.html(
+            """
+            <div style="font-size: 0.78rem; color: #94A3B8; background: #0F172A; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; margin: 8px 0;">
+                <span style="font-weight: 600; color: #F8FAFC;">Security requirements:</span> 8+ characters · 1 uppercase letter · 1 lowercase letter · 1 number
+            </div>
+            """
+        )
+
+        submitted = st.form_submit_button("Create Account", use_container_width=True, type="primary")
+        if submitted:
+            validation_result = validate_signup_fields(new_name, new_email, new_password, confirm_password)
+
             if not validation_result[0]:
                 st.error(validation_result[1])
                 return
-            
-            # Show loading spinner during signup
-            with st.spinner("Creating your account..."):
+
+            with st.spinner("Provisioning clinical user account..."):
                 success, response = st.session_state.auth_service.sign_up(
-                    new_email, new_password, new_name
+                    new_email.strip(), new_password, new_name.strip()
                 )
-                
+
                 if success:
                     st.session_state.authenticated = True
                     st.session_state.user = response
+                    rt = st.session_state.get("refresh_token", "")
+                    token = SessionManager.generate_auth_token(response["id"], rt)
+                    st.query_params["auth"] = token
                     st.success("Account created successfully! Redirecting...")
-                    time.sleep(1)
+                    time.sleep(0.5)
                     st.rerun()
                 else:
-                    st.error(f"Sign up failed: {response}")
+                    st.error(f"Registration failed: {response}")

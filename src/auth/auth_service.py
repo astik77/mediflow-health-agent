@@ -93,7 +93,10 @@ class AuthService:
             }
 
             # Insert user data into users table
-            self.supabase.table("users").insert(user_data).execute()
+            try:
+                self.supabase.table("users").insert(user_data).execute()
+            except Exception:
+                pass
 
             # If we got a session immediately (email confirmation off), store it
             if auth_response.session:
@@ -112,8 +115,6 @@ class AuthService:
     def sign_in(self, email, password):
         try:
             # Clear any existing session data first
-            # But don't call sign_out() which destroys auth_service in session_state
-            # Just clear the supabase client session locally
             try:
                 self.supabase.auth.sign_out()
             except Exception:
@@ -123,15 +124,26 @@ class AuthService:
                 {"email": email, "password": password}
             )
 
-            if auth_response and auth_response.user:
-                # Get user data
-                user_data = self.get_user_data(auth_response.user.id)
-                if not user_data:
-                    return False, "User data not found"
-
-                # Store session info
+            if auth_response and auth_response.user and auth_response.session:
+                # Store session tokens
                 st.session_state.auth_token = auth_response.session.access_token
                 st.session_state.refresh_token = auth_response.session.refresh_token
+
+                # Get user data or create if missing from public.users
+                user_data = self.get_user_data(auth_response.user.id)
+                if not user_data:
+                    user_data = {
+                        "id": auth_response.user.id,
+                        "email": auth_response.user.email,
+                        "name": (auth_response.user.user_metadata or {}).get("name")
+                        or (auth_response.user.email.split("@")[0] if auth_response.user.email else "User"),
+                        "created_at": auth_response.user.created_at or datetime.now().isoformat(),
+                    }
+                    try:
+                        self.supabase.table("users").insert(user_data).execute()
+                    except Exception:
+                        pass
+
                 st.session_state.user = user_data
                 return True, user_data
 
@@ -188,6 +200,19 @@ class AuthService:
         except Exception as e:
             st.error(f"Error fetching sessions: {str(e)}")
             return False, []
+
+    def get_session(self, session_id):
+        try:
+            result = (
+                self.supabase.table("chat_sessions")
+                .select("*")
+                .eq("id", session_id)
+                .single()
+                .execute()
+            )
+            return True, result.data if result else None
+        except Exception:
+            return False, None
 
     def save_chat_message(self, session_id, content, role="user"):
         try:
@@ -264,6 +289,36 @@ class AuthService:
         except Exception:
             return None
 
+    def restore_session_from_token(self, refresh_token: str):
+        """Restore Supabase session using the persistent refresh token across browser reloads."""
+        try:
+            res = self.supabase.auth.refresh_session(refresh_token)
+            if not res or not res.session or not res.user:
+                return False, None, None
+
+            # Store restored tokens in session_state
+            st.session_state.auth_token = res.session.access_token
+            st.session_state.refresh_token = res.session.refresh_token
+
+            # Query user data from public.users with authenticated client
+            user_data = self.get_user_data(res.user.id)
+            if not user_data:
+                user_data = {
+                    "id": res.user.id,
+                    "email": res.user.email,
+                    "name": (res.user.user_metadata or {}).get("name")
+                    or (res.user.email.split("@")[0] if res.user.email else "User"),
+                    "created_at": res.user.created_at or datetime.now().isoformat(),
+                }
+                try:
+                    self.supabase.table("users").insert(user_data).execute()
+                except Exception:
+                    pass
+
+            return True, user_data, res.session.refresh_token
+        except Exception:
+            return False, None, None
+
     def get_user_data(self, user_id):
         """Get user data from database."""
         try:
@@ -271,9 +326,10 @@ class AuthService:
                 self.supabase.table("users")
                 .select("*")
                 .eq("id", user_id)
-                .single()
                 .execute()
             )
-            return response.data if response else None
+            if response and response.data and len(response.data) > 0:
+                return response.data[0]
+            return None
         except Exception:
             return None

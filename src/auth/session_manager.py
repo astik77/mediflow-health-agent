@@ -1,184 +1,174 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from config.app_config import SESSION_TIMEOUT_MINUTES
-import json
+import hmac
+import hashlib
+
 
 class SessionManager:
     @staticmethod
+    def _get_secret_key() -> bytes:
+        try:
+            secret = st.secrets.get("SUPABASE_KEY", "mediflow_clinical_salt")
+        except Exception:
+            secret = "mediflow_clinical_salt"
+        return secret.encode("utf-8")
+
+    @staticmethod
+    def generate_auth_token(user_id: str, refresh_token: str = "") -> str:
+        """Create a cryptographically signed auth token containing user_id and refresh_token."""
+        if not refresh_token and "refresh_token" in st.session_state:
+            refresh_token = st.session_state.refresh_token or ""
+        payload = f"{user_id}::{refresh_token}"
+        sig = hmac.new(SessionManager._get_secret_key(), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        return f"{payload}::{sig}"
+
+    @staticmethod
+    def verify_auth_token(token: str):
+        """Verify the cryptographic signature of an auth token. Returns (user_id, refresh_token) or (None, None)."""
+        if not token or "::" not in token:
+            return None, None
+        parts = token.split("::")
+        if len(parts) != 3:
+            return None, None
+        user_id, refresh_token, sig = parts
+        payload = f"{user_id}::{refresh_token}"
+        expected_sig = hmac.new(SessionManager._get_secret_key(), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(sig, expected_sig):
+            return user_id, refresh_token
+        return None, None
+
+    @staticmethod
     def init_session():
-        """Initialize or validate session."""
-        # Initialize session only once per browser session
-        if 'session_initialized' not in st.session_state:
+        """Initialize or validate session with persistent URL & token support."""
+        if "session_initialized" not in st.session_state:
             st.session_state.session_initialized = True
-            # Try to restore session from persistent storage
-            SessionManager._restore_from_storage()
-            
-        if 'auth_service' not in st.session_state:
+
+        if "auth_service" not in st.session_state:
             from auth.auth_service import AuthService
             st.session_state.auth_service = AuthService()
-        
+
+        # Restore user session from persistent token in query params if not in session_state
+        if "user" not in st.session_state or not st.session_state.user:
+            auth_token = st.query_params.get("auth")
+            if auth_token:
+                user_id, refresh_token = SessionManager.verify_auth_token(auth_token)
+                if refresh_token:
+                    success, user_data, new_rt = st.session_state.auth_service.restore_session_from_token(refresh_token)
+                    if success and user_data:
+                        st.session_state.user = user_data
+                        st.session_state.authenticated = True
+                        if new_rt:
+                            st.session_state.refresh_token = new_rt
+                            new_token = SessionManager.generate_auth_token(user_data["id"], new_rt)
+                            if st.query_params.get("auth") != new_token:
+                                st.query_params["auth"] = new_token
+                    else:
+                        # Stale or invalid token - clear it cleanly
+                        try:
+                            del st.query_params["auth"]
+                        except KeyError:
+                            pass
+
+        # Maintain URL state when user is active
+        if st.session_state.get("user") and st.session_state.get("refresh_token"):
+            current_token = SessionManager.generate_auth_token(
+                st.session_state.user["id"], st.session_state.refresh_token
+            )
+            if st.query_params.get("auth") != current_token:
+                st.query_params["auth"] = current_token
+
+            # Restore active session from URL query params
+            stored_session_id = st.query_params.get("session_id")
+            if stored_session_id:
+                curr_id = (
+                    st.session_state.get("current_session", {}).get("id")
+                    if isinstance(st.session_state.get("current_session"), dict)
+                    else None
+                )
+                if curr_id != stored_session_id:
+                    success, session = st.session_state.auth_service.get_session(stored_session_id)
+                    if success and session and session.get("user_id") == st.session_state.user["id"]:
+                        st.session_state.current_session = session
+
         # Check session timeout
-        if 'last_activity' in st.session_state:
+        if "last_activity" in st.session_state:
             idle_time = datetime.now() - st.session_state.last_activity
             if idle_time > timedelta(minutes=SESSION_TIMEOUT_MINUTES):
-                SessionManager.clear_session_state()
-                st.error("Session expired. Please log in again.")
+                SessionManager.logout()
+                st.error("Session expired due to inactivity. Please sign in again.")
                 st.rerun()
-        
-        # Update last activity
+
         st.session_state.last_activity = datetime.now()
-        
-        # Validate token and user data
-        if 'user' in st.session_state:
-            user_data = st.session_state.auth_service.validate_session_token()
-            if not user_data:
-                SessionManager.clear_session_state()
-                st.error("Invalid session. Please log in again.")
-                st.rerun()
-    
-    @staticmethod
-    def _restore_from_storage():
-        """Restore session from persistent storage."""
-        try:
-            # Inject storage script to enable localStorage functionality
-            SessionManager._inject_storage_script()
-            
-            # The actual restoration happens in AuthService.try_restore_session()
-            # which uses Supabase's built-in session persistence
-            
-        except Exception:
-            pass  # Ignore errors during restoration
-    
-    @staticmethod
-    def _inject_storage_script():
-        """Inject JavaScript for persistent storage management."""
-        storage_script = """
-        <script>
-        // Check if user data exists in localStorage on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            const storedAuth = localStorage.getItem('hia_auth');
-            if (storedAuth) {
-                try {
-                    const authData = JSON.parse(storedAuth);
-                    // Set a flag that Python can check
-                    window.hia_auth_data = authData;
-                } catch (e) {
-                    localStorage.removeItem('hia_auth');
-                }
-            }
-        });
-        
-        // Function to save auth data
-        window.saveAuthData = function(authData) {
-            localStorage.setItem('hia_auth', JSON.stringify(authData));
-        };
-        
-        // Function to clear auth data
-        window.clearAuthData = function() {
-            localStorage.removeItem('hia_auth');
-        };
-        
-        // Function to get auth data
-        window.getAuthData = function() {
-            const stored = localStorage.getItem('hia_auth');
-            return stored ? JSON.parse(stored) : null;
-        };
-        </script>
-        """
-        st.markdown(storage_script, unsafe_allow_html=True)
 
     @staticmethod
     def clear_session_state():
         """Clear all session state data."""
-        # Clear persistent storage
-        SessionManager._clear_persistent_storage()
-        
-        keys_to_keep = ['session_initialized']
+        keys_to_keep = ["session_initialized"]
         for key in list(st.session_state.keys()):
             if key not in keys_to_keep:
                 del st.session_state[key]
-    
-    @staticmethod
-    def _clear_persistent_storage():
-        """Clear persistent storage."""
-        clear_script = """
-        <script>
-        if (typeof window.clearAuthData === 'function') {
-            window.clearAuthData();
-        }
-        </script>
-        """
-        st.markdown(clear_script, unsafe_allow_html=True)
-    
-    @staticmethod
-    def _save_to_persistent_storage(user_data, auth_token):
-        """Save authentication data to persistent storage."""
-        auth_data = {
-            'user': user_data,
-            'auth_token': auth_token,
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        save_script = f"""
-        <script>
-        if (typeof window.saveAuthData === 'function') {{
-            window.saveAuthData({json.dumps(auth_data)});
-        }}
-        </script>
-        """
-        st.markdown(save_script, unsafe_allow_html=True)
 
     @staticmethod
     def is_authenticated():
         """Check if user is authenticated."""
-        return bool(st.session_state.get('user'))
-    
+        return bool(st.session_state.get("user"))
+
     @staticmethod
     def create_chat_session():
-        """Create a new chat session."""
+        """Create a new chat session and persist it in the URL."""
         if not SessionManager.is_authenticated():
             return False, "Not authenticated"
-        return st.session_state.auth_service.create_session(
-            st.session_state.user['id']
-        )
-    
+        success, session = st.session_state.auth_service.create_session(st.session_state.user["id"])
+        if success and session:
+            st.query_params["session_id"] = session["id"]
+        return success, session
+
     @staticmethod
     def get_user_sessions():
         """Get user's chat sessions."""
         if not SessionManager.is_authenticated():
             return False, []
-        return st.session_state.auth_service.get_user_sessions(
-            st.session_state.user['id']
-        )
-    
+        return st.session_state.auth_service.get_user_sessions(st.session_state.user["id"])
+
     @staticmethod
     def delete_session(session_id):
         """Delete a chat session."""
         if not SessionManager.is_authenticated():
             return False, "Not authenticated"
+        if st.query_params.get("session_id") == session_id:
+            try:
+                del st.query_params["session_id"]
+            except KeyError:
+                pass
         return st.session_state.auth_service.delete_session(session_id)
-    
+
     @staticmethod
     def logout():
-        """Logout user and clear session."""
-        if 'auth_service' in st.session_state:
+        """Logout user and clear URL & memory session."""
+        try:
+            st.query_params.clear()
+        except Exception:
+            pass
+        if "auth_service" in st.session_state:
             st.session_state.auth_service.sign_out()
         SessionManager.clear_session_state()
-    
+
     @staticmethod
     def login(email, password):
-        """Handle user login."""
-        if 'auth_service' not in st.session_state:
+        """Handle user login and set persistent session token."""
+        if "auth_service" not in st.session_state:
             from auth.auth_service import AuthService
             st.session_state.auth_service = AuthService()
-            
+
         success, user_data = st.session_state.auth_service.sign_in(email, password)
-        
-        # If login successful, save to persistent storage
-        if success and 'auth_token' in st.session_state:
-            SessionManager._save_to_persistent_storage(
-                user_data, 
-                st.session_state.auth_token
-            )
-            
+
+        if success and user_data and "id" in user_data:
+            st.session_state.user = user_data
+            st.session_state.authenticated = True
+            rt = st.session_state.get("refresh_token", "")
+            if rt:
+                token = SessionManager.generate_auth_token(user_data["id"], rt)
+                st.query_params["auth"] = token
+
         return success, user_data
