@@ -1,6 +1,6 @@
 import streamlit as st
 from auth.session_manager import SessionManager
-from config.app_config import APP_ICON, APP_NAME, APP_TAGLINE
+from config.app_config import APP_ICON, APP_NAME, APP_TAGLINE, get_logo_base64
 from utils.validators import validate_signup_fields
 import time
 
@@ -53,27 +53,13 @@ def show_login_page():
     </script>
     """)
 
+    logo_src = get_logo_base64()
     st.html(
         f"""
-        <div style="text-align: center; padding: 2.25rem 1rem 1.25rem 1rem; max-width: 480px; margin: 0 auto;">
-            <div style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 44px;
-                height: 44px;
-                border-radius: 10px;
-                background: rgba(56, 189, 248, 0.1);
-                border: 1px solid rgba(56, 189, 248, 0.25);
-                font-size: 22px;
-                margin-bottom: 0.75rem;
-                box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
-            ">
-                {APP_ICON}
+        <div style="text-align: center; padding: 2rem 1rem 1.25rem 1rem; max-width: 480px; margin: 0 auto;">
+            <div style="max-width: 280px; margin: 0 auto 0.75rem auto;">
+                <img src="{logo_src}" style="width: 100%; height: auto; display: block; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.35));" alt="MediFlow">
             </div>
-            <h1 style="font-weight: 800; color: #F8FAFC; font-size: 1.85rem; letter-spacing: -0.02em; margin: 0 0 0.25rem 0;">
-                {APP_NAME}
-            </h1>
             <p style="color: #38BDF8; font-size: 0.92rem; font-weight: 600; margin: 0 0 0.5rem 0;">
                 {APP_TAGLINE}
             </p>

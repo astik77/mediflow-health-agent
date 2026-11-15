@@ -1,7 +1,7 @@
 import streamlit as st
 from auth.session_manager import SessionManager
 from components.footer import show_footer
-from config.app_config import ANALYSIS_DAILY_LIMIT, PRIMARY_COLOR
+from config.app_config import ANALYSIS_DAILY_LIMIT, PRIMARY_COLOR, APP_NAME, get_icon_base64
 
 
 def html(content: str):
@@ -11,10 +11,18 @@ def html(content: str):
 
 def show_sidebar():
     with st.sidebar:
-        html("""
+        icon_src = get_icon_base64()
+        html(f"""
+        <div style="display: flex; align-items: center; gap: 10px; padding: 0.25rem 0 0.85rem 0; border-bottom: 1px solid #334155; margin-bottom: 0.85rem;">
+            <img src="{icon_src}" style="height: 34px; width: 34px; object-fit: contain; mix-blend-mode: screen;" alt="MediFlow">
+            <div>
+                <div style="font-weight: 800; color: #F8FAFC; font-size: 1.05rem; line-height: 1.15;">{APP_NAME}</div>
+                <div style="font-size: 0.72rem; color: #38BDF8; font-weight: 600;">Clinical Intelligence</div>
+            </div>
+        </div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem;">
-            <span style="font-size: 1.2rem;">💬</span>
-            <span style="font-weight: 700; color: #F8FAFC; font-size: 1.05rem;">Diagnostic History</span>
+            <span style="font-size: 1.1rem;">💬</span>
+            <span style="font-weight: 700; color: #F8FAFC; font-size: 0.96rem;">Diagnostic History</span>
         </div>
         """)
 

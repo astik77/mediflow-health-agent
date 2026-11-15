@@ -4,13 +4,23 @@ from components.auth_pages import show_login_page
 from components.sidebar import show_sidebar
 from components.analysis_form import show_analysis_form
 from components.footer import show_footer
-from config.app_config import APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_ICON, PRIMARY_COLOR, SECONDARY_COLOR
+from config.app_config import (
+    APP_NAME,
+    APP_TAGLINE,
+    APP_DESCRIPTION,
+    APP_ICON,
+    PRIMARY_COLOR,
+    SECONDARY_COLOR,
+    get_logo_base64,
+    get_icon_base64,
+    get_favicon,
+)
 from services.ai_service import get_chat_response
 
 # Must be the first Streamlit command
 st.set_page_config(
     page_title="MediFlow - Health Management Agent",
-    page_icon="🩺",
+    page_icon=get_favicon(),
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -104,12 +114,15 @@ html("""
 
 def show_welcome_screen():
     """Dark Slate & Sky Blue hero section."""
+    logo_src = get_logo_base64()
     html(f"""
-    <div style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 2.75rem 2rem; text-align: center; margin: 1rem auto 2rem auto; max-width: 900px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);">
-        <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 14px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; color: #38BDF8; margin-bottom: 1rem;">
-            <span>{APP_ICON}</span> Clinical Diagnostics & Intelligence
+    <div style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 2.5rem 2rem; text-align: center; margin: 1rem auto 2rem auto; max-width: 900px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 14px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; color: #38BDF8; margin-bottom: 1.25rem;">
+            <span>✨</span> Clinical Diagnostics & Intelligence
         </div>
-        <h1 style="font-size: 2.35rem; font-weight: 800; color: #F8FAFC; letter-spacing: -0.02em; margin: 0 0 0.5rem 0;">{APP_NAME}</h1>
+        <div style="margin: 0 auto 0.75rem auto; max-width: 340px;">
+            <img src="{logo_src}" style="width: 100%; height: auto; display: block; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.32));" alt="MediFlow">
+        </div>
         <p style="font-size: 1.05rem; font-weight: 600; color: #38BDF8; margin: 0 0 0.75rem 0;">{APP_TAGLINE}</p>
         <p style="font-size: 0.92rem; color: #94A3B8; max-width: 680px; margin: 0 auto 2rem auto; line-height: 1.6;">{APP_DESCRIPTION}</p>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.5rem auto 2rem auto; text-align: left;">
@@ -244,14 +257,15 @@ def show_user_greeting():
     """Clean dark clinical top navigation bar."""
     if st.session_state.user:
         display_name = st.session_state.user.get("name") or st.session_state.user.get("email", "")
+        icon_src = get_icon_base64()
         html(f"""
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; background: #1E293B; border: 1px solid #334155; border-radius: 8px; margin-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">🩺</span>
-                <span style="font-weight: 800; color: #F8FAFC; font-size: 0.98rem; letter-spacing: -0.01em;">{APP_NAME}</span>
-                <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.1); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 7px; border-radius: 4px; font-weight: 600;">CLINICAL AI</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.15rem; background: #1E293B; border: 1px solid #334155; border-radius: 8px; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="{icon_src}" style="height: 28px; width: 28px; object-fit: contain; mix-blend-mode: screen;" alt="MediFlow">
+                <span style="font-weight: 800; color: #F8FAFC; font-size: 1.02rem; letter-spacing: -0.01em;">{APP_NAME}</span>
+                <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.1); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 600;">CLINICAL AI</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="height: 7px; width: 7px; background-color: #10B981; border-radius: 50%; display: inline-block;"></span>
                 <span style="font-size: 0.85rem; font-weight: 500; color: #CBD5E1;">{display_name}</span>
             </div>
