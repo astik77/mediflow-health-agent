@@ -35,6 +35,19 @@ def show_login_page():
                 padding: 1.75rem 1.5rem !important;
                 box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.06) !important;
             }
+
+            /* Remove any border/box around logo images */
+            img {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+
+            iframe[data-testid="stHtmlFrameIframe"],
+            div[data-testid="stHtml"] iframe {
+                border: none !important;
+                outline: none !important;
+            }
         </style>
         """
     )
@@ -57,8 +70,8 @@ def show_login_page():
     st.html(
         f"""
         <div style="text-align: center; padding: 2rem 1rem 1.25rem 1rem; max-width: 480px; margin: 0 auto;">
-            <div style="max-width: 280px; margin: 0 auto 0.75rem auto;">
-                <img src="{logo_src}" style="width: 100%; height: auto; display: block; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.35));" alt="MediFlow">
+            <div style="max-width: 280px; margin: 0 auto 0.75rem auto; background: transparent; border: none; outline: none;">
+                <img src="{logo_src}" style="width: 100%; height: auto; display: block; border: none; outline: none; box-shadow: none; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.35));" alt="MediFlow">
             </div>
             <p style="color: #38BDF8; font-size: 0.92rem; font-weight: 600; margin: 0 0 0.5rem 0;">
                 {APP_TAGLINE}

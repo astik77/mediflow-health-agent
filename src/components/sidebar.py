@@ -14,7 +14,7 @@ def show_sidebar():
         icon_src = get_icon_base64()
         html(f"""
         <div style="display: flex; align-items: center; gap: 10px; padding: 0.25rem 0 0.85rem 0; border-bottom: 1px solid #334155; margin-bottom: 0.85rem;">
-            <img src="{icon_src}" style="height: 34px; width: 34px; object-fit: contain; mix-blend-mode: screen;" alt="MediFlow">
+            <img src="{icon_src}" style="height: 34px; width: 34px; object-fit: contain; border: none; outline: none; box-shadow: none; mix-blend-mode: screen;" alt="MediFlow">
             <div>
                 <div style="font-weight: 800; color: #F8FAFC; font-size: 1.05rem; line-height: 1.15;">{APP_NAME}</div>
                 <div style="font-size: 0.72rem; color: #38BDF8; font-weight: 600;">Clinical Intelligence</div>

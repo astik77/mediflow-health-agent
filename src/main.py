@@ -108,6 +108,20 @@ html("""
         margin-bottom: 1rem !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
     }
+
+    /* Remove border/outline from all img tags — logo must be borderless */
+    img {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Remove iframe border that Streamlit adds around st.html() blocks */
+    iframe[data-testid="stHtmlFrameIframe"],
+    div[data-testid="stHtml"] iframe {
+        border: none !important;
+        outline: none !important;
+    }
 </style>
 """)
 
@@ -120,8 +134,8 @@ def show_welcome_screen():
         <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 14px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; color: #38BDF8; margin-bottom: 1.25rem;">
             <span>✨</span> Clinical Diagnostics & Intelligence
         </div>
-        <div style="margin: 0 auto 0.75rem auto; max-width: 340px;">
-            <img src="{logo_src}" style="width: 100%; height: auto; display: block; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.32));" alt="MediFlow">
+        <div style="margin: 0 auto 0.75rem auto; max-width: 340px; background: transparent; border: none; outline: none;">
+            <img src="{logo_src}" style="width: 100%; height: auto; display: block; border: none; outline: none; box-shadow: none; mix-blend-mode: screen; filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.32));" alt="MediFlow">
         </div>
         <p style="font-size: 1.05rem; font-weight: 600; color: #38BDF8; margin: 0 0 0.75rem 0;">{APP_TAGLINE}</p>
         <p style="font-size: 0.92rem; color: #94A3B8; max-width: 680px; margin: 0 auto 2rem auto; line-height: 1.6;">{APP_DESCRIPTION}</p>
@@ -261,7 +275,7 @@ def show_user_greeting():
         html(f"""
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.15rem; background: #1E293B; border: 1px solid #334155; border-radius: 8px; margin-bottom: 1.25rem;">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="{icon_src}" style="height: 28px; width: 28px; object-fit: contain; mix-blend-mode: screen;" alt="MediFlow">
+                <img src="{icon_src}" style="height: 28px; width: 28px; object-fit: contain; border: none; outline: none; box-shadow: none; mix-blend-mode: screen;" alt="MediFlow">
                 <span style="font-weight: 800; color: #F8FAFC; font-size: 1.02rem; letter-spacing: -0.01em;">{APP_NAME}</span>
                 <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.1); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 600;">CLINICAL AI</span>
             </div>
