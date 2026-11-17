@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Ensure src/ directory is always prioritized in sys.path
+_SRC_DIR = str(Path(__file__).resolve().parent)
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
 import streamlit as st
 from auth.session_manager import SessionManager
 from components.auth_pages import show_login_page
