@@ -21,7 +21,7 @@ An intelligent medical intelligence platform that analyzes comprehensive laborat
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features.
 
 - **Automated Biomarker Spectrum Mapping**:
   - Automatically identifies, extracts, and tags core diagnostic spectra from uploaded PDF reports:
