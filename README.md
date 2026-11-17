@@ -137,12 +137,6 @@ hia/
 │       └── schema.png          # Schema diagram
 ```
 
-## 👥 Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on how to submit pull requests, the development workflow, coding standards, and more.
-
-We appreciate all contributions, from reporting bugs and improving documentation to implementing new features.
-
 ## 👨‍💻 Contributors
 
 Thanks to all the amazing contributors who have helped improve this project!
