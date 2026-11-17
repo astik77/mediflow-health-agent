@@ -189,7 +189,7 @@ This project is developed as an academic capstone / major project by:
 
 | Contributor | Role | Key Contributions |
 | :--- | :--- | :--- |
-| **Astik Saini** | *[Role to be assigned]* | *[Contributions to be updated]* |
-| **Meet Goyal** | *[Role to be assigned]* | *[Contributions to be updated]* |
-| **Gaurav Singh** | *[Role to be assigned]* | *[Contributions to be updated]* |
-| **Shubham Kumar** | *[Role to be assigned]* | *[Contributions to be updated]* |
+| **Astik Saini** | **AI & LLM Pipeline Architect** | Architected the 4-tier model cascade (`gpt-oss-120b`, `qwen3.8-27b`, `gpt-oss-20b`, `allam-2-7b`) on Groq with automated fallback resilience; designed clinical specialist prompts, diagnostic schemas, and differential synthesis pipelines. |
+| **Meet Goyal** | **Cloud Database & Security Architect** | Designed Supabase PostgreSQL architecture and Row-Level Security (RLS) policies; engineered cryptographic HMAC-SHA256 session tokenization and auto-refresh mechanisms for zero-drop reload persistence; managed cloud deployment CI/CD. |
+| **Gaurav Singh** | **Clinical RAG & Vector Systems Engineer** | Implemented the medical document extraction engine with biomarker spectrum mapping (CBC, Metabolic, Lipid, Hepatic, Thyroid); constructed the LangChain + FAISS semantic vector retrieval pipeline using `all-MiniLM-L6-v2` embeddings for context-grounded Q&A. |
+| **Shubham Kumar** | **Full-Stack & UI/UX Systems Engineer** | Engineered the modern Streamlit interface with a clinical Dark Slate & Sky Blue/Teal design system; built responsive component layouts, live quota tracking indicators, and integrated official borderless vector branding (logo, favicon, and badges). |
