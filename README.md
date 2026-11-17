@@ -1,152 +1,195 @@
-# 🩺 HIA (Health Insights Agent)
+# 🩺 MediFlow
+### Evidence-Grounded Longitudinal Health Intelligence & Clinical Diagnostics
 
-AI Agent to analyze blood reports and provide detailed health insights.
+An intelligent medical intelligence platform that analyzes comprehensive laboratory blood panels, performs automated biomarker spectrum mapping, and enables evidence-grounded conversational follow-up via a multi-model LLM cascade and contextual RAG.
+
+**Live Application**: [mediflow-health-management.streamlit.app](https://mediflow-health-management.streamlit.app/)
 
 <p align="center">
-  <a href="https://github.com/harshhh28/hia/issues"><img src="https://img.shields.io/github/issues/harshhh28/hia"></a> 
-  <a href="https://github.com/harshhh28/hia/stargazers"><img src="https://img.shields.io/github/stars/harshhh28/hia"></a>
-  <a href="https://github.com/harshhh28/hia/network/members"><img src="https://img.shields.io/github/forks/harshhh28/hia"></a>
-  <a href="https://github.com/harshhh28/hia/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-blue.svg">
-  </a>
+  <img src="assets/mediflow_logo.png" alt="MediFlow Logo" width="380px" style="border: none; outline: none;" />
 </p>
 
 <p align="center">
-  <a href="#-features">Features</a> |
-  <a href="#%EF%B8%8F-tech-stack">Tech Stack</a> |
-  <a href="#-installation">Installation</a> |
-  <a href="#-project-structure">Project Structure</a> |
-  <a href="#%EF%B8%8F-author">Author</a>
+  <a href="#-key-features">Key Features</a> •
+  <a href="#%EF%B8%8F-system-architecture">System Architecture</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
+  <a href="#-project-structure">Project Structure</a> •
+  <a href="#-getting-started">Getting Started</a> •
+  <a href="#-deployment">Deployment</a> •
+  <a href="#-team--contributors">Team & Contributors</a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/harshhh28/hia"><img src="https://raw.githubusercontent.com/harshhh28/hia/main/public/HIA_demo.gif" alt="Usage Demo"></a>
-</p>
+---
 
-## 🌟 Features
+## 🌟 Key Features
 
-- **Agent-based architecture**
-  - **Analysis Agent**: Report analysis with in-context learning from previous analyses and a built-in knowledge base
-  - **Chat Agent**: RAG-powered follow-up Q&A over your report (FAISS + HuggingFace embeddings)
-- **Multi-model cascade** via Groq with automatic fallback (primary → secondary → tertiary → fallback)
-- **Chat sessions**: Create multiple analysis sessions; each session stores report, analysis, and follow-up messages in Supabase
-- **Report sources**: Upload your own PDF or use the built-in sample report for quick testing
-- **PDF handling**: Upload up to 20MB, max 50 pages; validation for file type and medical-report content
-- **Daily analysis limit**: Configurable cap (default 15/day) with countdown in the sidebar
-- **Secure auth**: Supabase Auth (sign up / sign in), session validation, and configurable session timeout
-- **Session history**: View, switch, and delete past sessions; report text persisted for follow-up chat across reloads
-- **Modern UI**: Responsive Streamlit app with sidebar session list, user greeting, and real-time feedback
+- **Automated Biomarker Spectrum Mapping**:
+  - Automatically identifies, extracts, and tags core diagnostic spectra from uploaded PDF reports:
+    - Complete Blood Count (CBC)
+    - Comprehensive Metabolic Panel (CMP / BMP)
+    - Lipid & Cardiovascular Panel
+    - Hepatic / Liver Function Panel
+    - Thyroid Profile (TSH, Free T3/T4)
+- **120B Multi-Model LLM Fallback Cascade**:
+  - High-resilience clinical synthesis engine powered by Groq with automated 4-tier model fallback:
+    1. **Primary**: `openai/gpt-oss-120b` (Deep clinical synthesis & complex panel correlation)
+    2. **Secondary**: `qwen/qwen3.8-27b` (High-efficiency clinical reasoning fallback)
+    3. **Tertiary**: `openai/gpt-oss-20b` (Rapid diagnostic assessment)
+    4. **Fallback**: `allam-2-7b` (High-availability safety baseline)
+- **Evidence-Grounded RAG Follow-Up Q&A**:
+  - Semantic vector indexing of extracted patient lab values using LangChain, HuggingFace embeddings (`sentence-transformers/all-MiniLM-L6-v2`), and in-memory FAISS vector storage.
+  - Context-bound follow-up chat strictly anchored to the patient's individual biomarker values to eliminate clinical hallucinations.
+- **Persistent Authenticated Sessions & RLS Security**:
+  - Full user lifecycle with Supabase Auth and PostgreSQL Row-Level Security (RLS).
+  - Cryptographic HMAC-SHA256 signed session tokenization (`user_id::refresh_token::signature`) persisted in URL query parameters and browser storage, preventing session loss on browser refreshes (F5).
+- **Modern Clinical Dark Design System**:
+  - Bespoke Dark Slate (`#0B0F19` / `#1E293B`) & Sky Blue / Clinical Teal (`#38BDF8` / `#2DD4BF`) interface with borderless vector branding, visual report intake indicators, and quota tracking.
+
+---
+
+## ⚙️ System Architecture
+
+```
+[Patient / Doctor]
+       │
+       ▼
+[Streamlit Dark Interface] ◄───► [Dual-Layer Session Manager] (HMAC + Supabase Auth)
+       │
+       ├─────────────────────────────────┐
+       ▼                                 ▼
+[PDF Ingestion & Text Extraction]   [Clinical Session History & State]
+  (PDFPlumber + File Validation)      (Supabase PostgreSQL + RLS)
+       │
+       ├─────────────────────────────────┬─────────────────────────────────┐
+       ▼                                 ▼                                 ▼
+[Biomarker Spectrum Detection]    [120B Model Cascade]             [FAISS Vector Store]
+  (CBC, Metabolic, Lipid, Hepatic)  (Groq: 120B ➔ 27B ➔ 20B ➔ 7B)    (Sentence-Transformers RAG)
+                                         │                                 │
+                                         ▼                                 ▼
+                             [Primary Clinical Synthesis]     [Evidence-Grounded Follow-Up]
+```
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Streamlit (1.42+)
-- **AI / LLM**
-  - **Report analysis**: Groq with multi-model fallback via `ModelManager`
-    - Primary: `meta-llama/llama-4-maverick-17b-128e-instruct`
-    - Secondary: `llama-3.3-70b-versatile`
-    - Tertiary: `llama-3.1-8b-instant`
-    - Fallback: `llama3-70b-8192`
-  - **Follow-up chat**: RAG with LangChain, HuggingFace embeddings (`all-MiniLM-L6-v2`), FAISS vector store, and Groq (`llama-3.3-70b-versatile`)
-- **Database**: Supabase (PostgreSQL)
-  - Tables: `users`, `chat_sessions`, `chat_messages`
-- **Auth**: Supabase Auth, Gotrue
-- **PDF**: PDFPlumber (text extraction), filetype (file validation)
-- **Libraries**: LangChain, LangChain Community, LangChain HuggingFace, LangChain Text Splitters, sentence-transformers, FAISS (CPU)
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend Framework** | [Streamlit](https://streamlit.io/) (Dark Slate & Sky Blue/Teal Theme, Custom HTML/CSS) |
+| **Language & Runtime** | Python 3.11+ |
+| **LLM Inference** | [Groq Cloud](https://groq.com/) Multi-Model Cascade (`gpt-oss-120b`, `qwen3.8-27b`, `gpt-oss-20b`, `allam-2-7b`) |
+| **Embeddings & Vector Store** | LangChain, HuggingFace (`all-MiniLM-L6-v2`), [FAISS](https://github.com/facebookresearch/faiss) (CPU) |
+| **Database & Auth** | [Supabase](https://supabase.com/) (PostgreSQL with Row-Level Security, Gotrue Auth) |
+| **Document Processing** | PDFPlumber, filetype |
+| **Security & Session** | Cryptographic HMAC-SHA256 tokenization with Supabase refresh token rotation |
 
-## 🚀 Installation
+---
 
-#### Requirements 📋
+## 📁 Project Structure
 
-- Python 3.8+
-- Streamlit 1.42+
-- Supabase account
-- Groq API key
-- PDFPlumber, filetype
-
-#### Getting Started 📝
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/harshhh28/hia.git
-cd hia
+```
+mediflow-health-agent/
+├── assets/
+│   ├── mediflow_logo.png       # Official borderless MediFlow brand logo
+│   ├── mediflow_icon.png       # Square icon mark for badges and avatars
+│   └── favicon.png             # 64x64 browser tab favicon
+├── src/
+│   ├── main.py                 # Application entrypoint & top-level layout
+│   ├── agents/
+│   │   ├── analysis_agent.py   # Clinical intake, validation, and synthesis agent
+│   │   ├── chat_agent.py       # RAG pipeline with FAISS vector store
+│   │   └── model_manager.py   # 4-tier Groq model fallback cascade
+│   ├── auth/
+│   │   ├── auth_service.py     # Supabase Auth client, session CRUD, and auto-provisioning
+│   │   └── session_manager.py # Cryptographic token handling & reload persistence
+│   ├── components/
+│   │   ├── analysis_form.py    # Report upload, biomarker spectrum tags, and intake form
+│   │   ├── auth_pages.py       # Frosted glass Login & Registration screens
+│   │   ├── footer.py           # Team attribution footer
+│   │   └── sidebar.py          # Diagnostic history list, quota meter, and logout
+│   ├── config/
+│   │   ├── app_config.py       # App constants, design tokens, and cached asset loaders
+│   │   ├── prompts.py          # Clinical specialist prompts & diagnosis schemas
+│   │   └── sample_data.py      # Standard reference blood panel for demo testing
+│   ├── services/
+│   │   └── ai_service.py       # AI orchestration & vector store caching
+│   └── utils/
+│       ├── pdf_extractor.py   # PDF text extraction and sanity checking
+│       └── validators.py       # Credential and document validation utilities
+├── public/
+│   └── db/
+│       ├── script.sql          # Supabase SQL schema (users, chat_sessions, chat_messages)
+│       └── schema.png          # Database ER diagram
+├── requirements.txt            # Python dependencies
+├── packages.txt                # Linux OS dependencies (libgomp1)
+└── README.md
 ```
 
-2. Install dependencies:
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.10 or 3.11
+- A free [Supabase](https://supabase.com/) project
+- A free [Groq Cloud](https://console.groq.com/) API key
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/astik77/mediflow-health-agent.git
+cd mediflow-health-agent
+```
+
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Required environment variables (in `.streamlit/secrets.toml`):
+### 3. Configure Secrets
+
+Create a file named `.streamlit/secrets.toml` in the repository root:
 
 ```toml
-SUPABASE_URL = "your-supabase-url"
-SUPABASE_KEY = "your-supabase-key"
-GROQ_API_KEY = "your-groq-api-key"
+SUPABASE_URL = "https://your-project-id.supabase.co"
+SUPABASE_KEY = "your-supabase-publishable-key"
+GROQ_API_KEY = "gsk_your_groq_api_key"
 ```
 
-4. Set up Supabase database schema:
+### 4. Database Setup
 
-The application uses three tables: `users`, `chat_sessions`, and `chat_messages`. Use the SQL script at `public/db/script.sql` to create them.
+Run the SQL script located at `public/db/script.sql` in the Supabase SQL Editor to provision the required tables (`users`, `chat_sessions`, `chat_messages`) and Row-Level Security policies.
 
-![database schema](https://raw.githubusercontent.com/harshhh28/hia/main/public/db/schema.png)
+*(Optional: Disable email confirmation in Supabase Dashboard: **Authentication → Providers → Email → Confirm email** for instant testing).*
 
-(You can turn off email confirmation on signup in Supabase: **Authentication → Providers → Email → Confirm email**.)
-
-5. Run the application:
+### 5. Launch Application
 
 ```bash
-streamlit run src\main.py
+streamlit run src/main.py
 ```
 
-## 📁 Project Structure
+The application will launch on `http://localhost:8501`.
 
-```
-hia/
-├── requirements.txt
-├── README.md
-├── src/
-│   ├── main.py                 # Application entry point; chat UI and session flow
-│   ├── auth/
-│   │   ├── auth_service.py     # Supabase auth, sessions, chat message persistence
-│   │   └── session_manager.py # Session init, timeout, create/delete chat sessions
-│   ├── components/
-│   │   ├── analysis_form.py    # Report source (upload/sample), patient form, analysis trigger
-│   │   ├── auth_pages.py       # Login / signup pages
-│   │   ├── footer.py           # Footer component
-│   │   ├── header.py           # User greeting
-│   │   └── sidebar.py          # Session list, new session, daily limit, logout
-│   ├── config/
-│   │   ├── app_config.py       # App name, limits (upload, pages, analysis, timeout)
-│   │   ├── prompts.py          # Specialist prompts for report analysis
-│   │   └── sample_data.py      # Sample blood report for "Use Sample PDF"
-│   ├── services/
-│   │   └── ai_service.py       # Analysis + chat entry points; vector store caching
-│   ├── agents/
-│   │   ├── analysis_agent.py   # Report analysis, rate limits, knowledge base, in-context learning
-│   │   ├── chat_agent.py       # RAG pipeline (embeddings, FAISS, query contextualization)
-│   │   └── model_manager.py   # Groq multi-model cascade and fallback
-│   └── utils/
-│       ├── validators.py       # Email, password, PDF file and content validation
-│       └── pdf_extractor.py   # PDF text extraction and validation
-├── public/
-│   └── db/
-│       ├── script.sql          # Supabase schema (users, chat_sessions, chat_messages)
-│       └── schema.png          # Schema diagram
-```
+---
 
-## 👨‍💻 Contributors
+## 🌐 Deployment
 
-Thanks to all the amazing contributors who have helped improve this project!
+MediFlow is continuously deployed via Git CI/CD on **Streamlit Community Cloud**:
 
-| Avatar | Name | GitHub | Role | Contributions | PR(s) | Notes |
-|--------|------|--------|------|---------------|-------|-------|
-| <img src="https://github.com/harshhh28.png" width="50px" height="50px" alt="harshhh28 avatar"/> | Harsh Gajjar | [harshhh28](https://github.com/harshhh28) | Project Creator & Maintainer | Core implementation, Documentation | N/A | Lead Developer |
-| <img src="https://github.com/gaurav98095.png" width="50px" height="50px" alt="gaurav98095 avatar"/> | Gaurav | [gaurav98095](https://github.com/gaurav98095) | Contributor | DB Schema, bugs | [#1](https://github.com/harshhh28/hia/pull/1), [#5](https://github.com/harshhh28/hia/pull/5), [#6](https://github.com/harshhh28/hia/pull/6), [#7](https://github.com/harshhh28/hia/pull/7) | Database Design, bugs |
+- **Live URL**: [https://mediflow-health-management.streamlit.app/](https://mediflow-health-management.streamlit.app/)
+- Any commit pushed to the `main` branch automatically triggers zero-downtime hot re-deployment.
 
-<!-- To future contributors: Your profile will be added here when your PR is merged! -->
+---
 
-## 🙋‍♂️ Author
+## 👥 Team & Contributors
 
-Created by [Astik Saini](https://mediflow-health-management.streamlit.app/)
+This project is developed as an academic capstone / major project by:
+
+| Contributor | Role | Key Contributions |
+| :--- | :--- | :--- |
+| **Astik Saini** | *[Role to be assigned]* | *[Contributions to be updated]* |
+| **Meet Goyal** | *[Role to be assigned]* | *[Contributions to be updated]* |
+| **Gaurav Singh** | *[Role to be assigned]* | *[Contributions to be updated]* |
+| **Shubham Kumar** | *[Role to be assigned]* | *[Contributions to be updated]* |
