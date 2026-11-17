@@ -1,4 +1,4 @@
-# 🩺 MediFlow
+# 🩺 MediFlow HI
 ### Evidence-Grounded Longitudinal Health Intelligence & Clinical Diagnostics
 
 An intelligent medical intelligence platform that analyzes comprehensive laboratory blood panels, performs automated biomarker spectrum mapping, and enables evidence-grounded conversational follow-up via a multi-model LLM cascade and contextual RAG.
